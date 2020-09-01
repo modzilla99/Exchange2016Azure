@@ -78,7 +78,7 @@
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
     "modulesRunUnrestricted": "powershell -ExecutionPolicy Unrestricted -file ",
-    "modulesPath": "https://raw.githubusercontent.com/modzilla99/Exchange2016Azure/exchange-acme/",
+    "modulesPath": "https://raw.githubusercontent.com/modzilla99/Exchange2016Azure/master/",
     "modulesWorkload": "https://github.com/modzilla99/ExchangeWorkload/releases/download/0.1/",
     "modulesExchange": "ExchangeWorkload.zip",
     "modulesUrlExchange": "[concat(variables('modulesWorkload'),variables('modulesExchange'))]",

@@ -1,8 +1,7 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-
 
     "vmAdminPassword": {
       "type": "securestring",
@@ -15,7 +14,38 @@
       "minLength": 3,
       "maxLength": 3,
       "metadata": {
-        "description": "Trainee  Nick Name."
+        "description": "Trainee Nick Name."
+      }
+    },
+    "SubID": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 36,
+      "metadata": {
+        "description": "SubsciptionID (for Let's Encrypt)"
+      }
+    },
+    "TenantID": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 36,
+      "metadata": {
+        "description": "TenantID (for Let's Encrypt)"
+      }
+    },
+    "AppID": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 36,
+      "metadata": {
+        "description": "AppID (for Let's Encrypt)"
+      }
+    },
+    "Password": {
+      "type": "string",
+      "minLength": 24,
+      "metadata": {
+        "description": "Password (for Let's Encrypt)"
       }
     }
   },
@@ -47,18 +77,21 @@
     "virtualNetworkName": "[tolower(concat(variables('Company'),'-',parameters('trainee'),'-vn-infrastructure'))]",
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
+    "modulesRunUnrestricted": "powershell -ExecutionPolicy Unrestricted -file ",
     "modulesPath": "https://raw.githubusercontent.com/modzilla99/Exchange2016Azure/master/",
     "modulesWorkload": "https://github.com/modzilla99/ExchangeWorkload/releases/download/0.1/",
     "modulesExchange": "ExchangeWorkload.zip",
     "modulesUrlExchange": "[concat(variables('modulesWorkload'),variables('modulesExchange'))]",
     "modulesExchangeData": "ExchangeWorkload.psd1",
     "modulesUrlExchangeData": "[concat(variables('modulesPath'),variables('modulesExchangeData'))]",
+    "modulesExchangeVars": "[concat(' -uri ',variables('exchangeISOUri'),' -destination ',variables('exchangeInstallerPath'))]",
+    "modulesACMEVars": "[concat(' -SubscriptionID ',parameters('SubID'),' -TenantID ',parameters('TenantID'),' -AppID ',parameters('AppID'),' -AZAppPass ',parameters('Password'))]",
     "configurationFunctionExchange": "ExchangeWorkload.ps1\\InstallAndConfigureExchange",
     "nsgName": "[tolower(concat(variables('Company'),'-',parameters('trainee'),'-nsg-infrastructure'))]",
     "nsgID": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('nsgName'))]",
     "exchangeInstallerPath": "InstallerExchange",
     "exchangeISOUri": "https://download.microsoft.com/download/0/5/f/05fbbfff-8316-4d12-a59d-80b3c56e4d81/ExchangeServer2016-x64-cu17.iso",
-    "modulesExchangeISODownload": "CSDownloadISO.ps1",
+    "modulesExchangeISODownload": "Optain-Exchange-Certs.ps1",
     "modulesUrlExchangeISODownload": "[concat(variables('modulesPath'),variables('modulesExchangeISODownload'))]",
     "DiagStorageName": "[tolower(concat(variables('Company'),parameters('trainee'),'sadiag'))]",
     "DiagStorageType": "Standard_LRS",
@@ -268,9 +301,9 @@
           }
         },
         {
-          "apiVersion": "2015-06-15",
           "type": "extensions",
           "name": "CustomScriptExtension",
+          "apiVersion": "2015-06-15",
           "location": "[variables('location')]",
           "dependsOn": [
             "[concat('Microsoft.Compute/virtualMachines/',variables('vmName'))]"
@@ -278,22 +311,20 @@
           "properties": {
             "publisher": "Microsoft.Compute",
             "type": "CustomScriptExtension",
-            "typeHandlerVersion": "1.4",
+            "typeHandlerVersion": "1.7",
             "autoUpgradeMinorVersion": true,
             "settings": {
               "fileUris": [
                 "[variables('modulesUrlExchangeISODownload')]"
               ],
-              "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -file ',variables('modulesExchangeISODownload'),' -uri ',variables('exchangeISOUri'),' -destination ',variables('exchangeInstallerPath'))]"
+              "commandToExecute": "[concat(variables('modulesRunUnrestricted'),variables('modulesExchangeISODownload'),variables('modulesExchangeVars'),variables('modulesACMEVars'))]"
             }
           }
         },
-
-
         {
-          "apiVersion": "2015-06-15",
           "type": "extensions",
           "name": "dscExtension",
+          "apiVersion": "2015-06-15",
           "location": "[variables('location')]",
           "dependsOn": [
             "[concat('Microsoft.Compute/virtualMachines/',variables('vmName'))]",
@@ -330,7 +361,6 @@
 
       ]
     },
-
     {
       "name": "updateVNetDNSAddress",
       "type": "Microsoft.Resources/deployments",

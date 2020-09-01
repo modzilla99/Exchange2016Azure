@@ -20,8 +20,8 @@ function Get-LECertificates {
 	
 	[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
 	New-Item -Path C:\Temp -ItemType Directory -Force
-	Install-PackageProvider -Name NuGet -Force > C:\Temp\install.nuget.log
-	Install-Module -Name Posh-ACME -Force -Scope AllUsers > C:\Temp\install.posh.log
+	Install-PackageProvider -Name NuGet -Force
+	Install-Module -Name Posh-ACME -Force -Scope AllUsers
 
 	$azParams = @{
 		AZSubscriptionId = $SubscriptionID
@@ -30,7 +30,7 @@ function Get-LECertificates {
 		AZAppPasswordInsecure = $AZAppPass
 	}
 
-	New-PACertificate *.$Domain -AcceptTOS -DnsPlugin Azure -PluginArgs $azParams > C:\Temp\posh.log
+	New-PACertificate "*.$Domain","$Domain" -AcceptTOS -DnsPlugin Azure -PluginArgs $azParams > C:\Temp\acme.log
 
 	New-Item -Path C:\Certificates -ItemType Directory -Force 
 	$Path = (Get-PACertificate).CertFile  
@@ -117,3 +117,32 @@ function DownloadISO {
 Get-LECertificates
 
 DownloadISO
+
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+ iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+ sleep 10
+ choco install "netfx-4.8" -y
+ choco install vscode -y
+ choco install microsoft-edge -y
+ 
+ 
+ 
+$LanguageSetting = "de-DE"
+$GeoIDSetting = "94"
+$TimeZoneSetting = "W. Europe Standard Time"
+$regionalsettingsURL = "https://raw.githubusercontent.com/sredlin/Azure/master/AzureVMRegionalSettings/Settings/AzureVMLanguageDE.xml"
+$RegionalSettings = "D:\AzureVMLanguageDE.xml"
+       
+#downdload regional settings file
+Invoke-WebRequest $regionalsettingsURL -OutFile $RegionalSettings
+
+        
+# Set Locale, language etc. 
+& $env:SystemRoot\System32\control.exe "intl.cpl,,/f:`"$RegionalSettings`""
+
+# Set languages/culture. Not needed perse.
+Set-WinSystemLocale $LanguageSetting
+Set-WinUserLanguageList -LanguageList $LanguageSetting -Force
+Set-Culture -CultureInfo $LanguageSetting
+Set-WinHomeLocation -GeoId $GeoIDSetting
+Set-TimeZone -Name $TimeZoneSetting

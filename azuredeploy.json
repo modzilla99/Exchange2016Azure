@@ -47,6 +47,60 @@
       "metadata": {
         "description": "Password (for Let's Encrypt)"
       }
+    },
+    "Domain": {
+      "type": "Object",
+      "allowedValues": [
+        {
+          "name": "Ausbildung",
+          "ResourceGroup": "rg-publicdns",
+          "domain": "vbu-ausbildung.ml"
+        },
+        {
+          "name": "Schulung",
+          "ResourceGroup": "rg-publicdns-schulung",
+          "domain": "vbu-schulung.ml"
+        }
+      ],
+      "defaultValue": {
+          "name": "Ausbildung",
+          "ResourceGroup": "rg-publicdns",
+          "domain": "vbu-ausbildung.ml"
+        },
+      "metadata": {
+        "description": "Setzt die Domain entsprechend der Auswahl."
+      }
+    },
+    "SubID": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 36,
+      "metadata": {
+        "description": "SubsciptionID (for Let's Encrypt)"
+      }
+    },
+    "TenantID": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 36,
+      "metadata": {
+        "description": "TenantID (for Let's Encrypt)"
+      }
+    },
+    "AppID": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 36,
+      "metadata": {
+        "description": "AppID (for Let's Encrypt)"
+      }
+    },
+    "Password": {
+      "type": "string",
+      "minLength": 24,
+      "metadata": {
+        "description": "Password (for Let's Encrypt)"
+      }
     }
   },
 
@@ -55,6 +109,7 @@
     "exchangeStorageSizeInGB": 10,
     "charactersToSkip": 10,
     "Company": "LEARN",
+    "fqdn": "[concat(parameters('trainee'),'.',parameters('Domain').domain)]",
     "imagePublisher": "MicrosoftWindowsServer",
     "imageOffer": "WindowsServer",
     "addressPrefix": "10.0.0.0/16",
@@ -65,18 +120,18 @@
     "exchangeDomainName": "[tolower(concat(parameters('trainee'), '.intern'))]",
     "uniqueDnsNameForPublicIPDC": "[tolower(concat(variables('Company'),'-',parameters('trainee'),'-dns-',skip(variables('vmName'),variables('charactersToSkip'))))]",
     "location": "[resourceGroup().location]",
-    "vmOsSku": "2012-R2-Datacenter",
+    "vmOsSku": "2016-Datacenter",
     "vmAdminUsername": "vbu-adm",
     "vmName": "[tolower(concat(variables('Company'),'-',parameters('trainee'),'-vm-dc'))]",
-    "vmNameEX": "[tolower(concat(variables('Company'),'-',parameters('trainee'),'-vm-ex'))]",
     "vmOsDiskName": "[concat(variables('vmName'),'-osdisk')]",
     "vmDataDiskName": "[concat(variables('vmName'),'-datadisk')]",
-    "vmSize": "Standard_D2_v2",
+    "vmSize": "Standard_D3_v2",
     "vmDataDiskSize": "15",
     "vmNicName": "[tolower(concat(variables('Company'),'-',parameters('trainee'),'-nic-',skip(variables('vmName'),variables('charactersToSkip'))))]",
     "virtualNetworkName": "[tolower(concat(variables('Company'),'-',parameters('trainee'),'-vn-infrastructure'))]",
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
+    "modulesACMEVars": "[concat(' -Domain ', variables('fqdn'),' -SubscriptionID ',parameters('SubID'),' -TenantID ',parameters('TenantID'),' -AppID ',parameters('AppID'),' -AZAppPass ',parameters('Password'))]",
     "modulesRunUnrestricted": "powershell -ExecutionPolicy Unrestricted -file ",
     "modulesPath": "https://raw.githubusercontent.com/modzilla99/Exchange2016Azure/master/",
     "modulesWorkload": "https://github.com/modzilla99/ExchangeWorkload/releases/download/0.1/",
@@ -131,6 +186,43 @@
           "domainNameLabel": "[variables('uniqueDnsNameForPublicIPDC')]"
         }
       }
+    },
+    {
+      "apiVersion": "2016-04-01",
+      "type": "Microsoft.Network/dnsZones",
+      "name": "[variables('fqdn')]",
+      "location": "global",
+      "dependsOn": [],
+      "tags": {},
+      "properties": {}
+    },
+    {
+      "apiVersion": "2018-05-01",
+      "name": "NameServerDelegation-d62f6a20837f4d498fe37b42789b907e",
+      "type": "Microsoft.Resources/deployments",
+      "resourceGroup": "[parameters('Domain').ResourceGroup]",
+      "subscriptionId": "[subscription().subscriptionId]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "https://dns.hosting.portal.azure.net/dns/Content/4.12.0.1550/Dns/Templates/NSDelegationLinkedTemplate.json",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "nsServers": {
+            "value": "[reference(variables('fqdn')).nameServers]"
+          },
+          "parentDnsZoneName": {
+            "value": "[parameters('Domain').domain]"
+          },
+          "dnsZoneName": {
+            "value": "[variables('fqdn')]"
+          }
+        }
+      },
+      "dependsOn": [
+        "[variables('fqdn')]"
+      ]
     },
     {
       "apiVersion": "2015-06-15",
@@ -317,7 +409,7 @@
               "fileUris": [
                 "[variables('modulesUrlExchangeISODownload')]"
               ],
-              "commandToExecute": "[concat(variables('modulesRunUnrestricted'),variables('modulesExchangeISODownload'),variables('modulesExchangeVars'),variables('modulesACMEVars'))]"
+              "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -file ',variables('modulesExchangeISODownload'),' -uri ',variables('exchangeISOUri'),' -destination ',variables('exchangeInstallerPath'),variables('modulesACMEVars'))]"
             }
           }
         },
@@ -341,6 +433,55 @@
               "properties": {
                 "DomainName": "[variables('exchangeDomainName')]",
                 "StorageSize": "[variables('exchangeStorageSizeInGB')]",
+                "MaxMustermannUserCreds": {
+                  "userName": "MMustermann",
+                  "password": "PrivateSettingsRef:vmAdminPassword"
+                },
+                "ErikaMustermannUserCreds": {
+                  "userName": "EMustermann",
+                  "password": "PrivateSettingsRef:vmAdminPassword"
+                },
+                "JohnDoeUserCreds": {
+                  "userName": "JDoe",
+                  "password": "PrivateSettingsRef:vmAdminPassword"
+                },
+                "KarlAndersUserCreds": {
+                  "userName": "KAnders",
+                  "password": "PrivateSettingsRef:vmAdminPassword"
+                },
+                "VeronikaSpulaUserCreds": {
+                  "userName": "VSpula",
+                  "password": "PrivateSettingsRef:vmAdminPassword"
+                },
+                "LeaMayerUserCreds": {
+                  "userName": "LMayer",
+                  "password": "PrivateSettingsRef:vmAdminPassword"
+                },
+                "CelinaHerzUserCreds": {
+                  "userName": "CHerz",
+                  "password": "PrivateSettingsRef:vmAdminPassword"
+                },
+                "WolfgangErnstUserCreds": {
+                  "userName": "WErnst",
+                  "password": "PrivateSettingsRef:vmAdminPassword"
+                },
+                "JohannFrickUserCreds": {
+                  "userName": "JFrick",
+                  "password": "PrivateSettingsRef:vmAdminPassword"
+                },
+                "SaschaHarzUserCreds": {
+                  "userName": "SHarz",
+                  "password": "PrivateSettingsRef:vmAdminPassword"
+                },
+                "WiolettaLonskaUserCreds": {
+                  "userName": "WLonska",
+                  "password": "PrivateSettingsRef:vmAdminPassword"
+                },
+                "RobertJungUserCreds": {
+                  "userName": "RJung",
+                  "password": "PrivateSettingsRef:vmAdminPassword"
+                },
+
                 "VMAdminCreds": {
                   "userName": "[variables('vmAdminUsername')]",
                   "password": "PrivateSettingsRef:vmAdminPassword"

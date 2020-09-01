@@ -30,7 +30,7 @@ function Get-LECertificates {
 		AZAppPasswordInsecure = $AZAppPass
 	}
 
-	New-PACertificate "*.$Domain","$Domain" -AcceptTOS -DnsPlugin Azure -PluginArgs $azParams > C:\Temp\acme.log
+	New-PACertificate "*.$Domain","$Domain" -AcceptTOS -DnsPlugin Azure -PluginArgs $azParams -Verbose > C:\Temp\acme.log
 
 	New-Item -Path C:\Certificates -ItemType Directory -Force 
 	$Path = (Get-PACertificate).CertFile  

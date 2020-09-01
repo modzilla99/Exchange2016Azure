@@ -1,9 +1,36 @@
 {
-    "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentParameters.json#",
-    "contentVersion": "1.0.0.0",
-    "parameters": {
-        "exchangeStorageSizeInGB": {
-            "value": 10
-        }
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vmAdminPassword": {
+      "reference": {
+        "keyVault": {
+          "id": ""
+        },
+        "secretName": ""
+      }
+    },
+    "trainee": {
+      "value": ""
+    },
+    "Domain": {
+      "value": {
+        "name": "",
+        "ResourceGroup": "",
+        "domain": ""
+      }
+    },
+    "SubID": {
+      "value": ""
+    },
+    "TenantID": {
+      "value": ""
+    },
+    "AppID": {
+      "value": ""
+    },
+    "Password": {
+      "value": ""
     }
+  }
 }

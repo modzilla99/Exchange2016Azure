@@ -17,37 +17,6 @@
         "description": "Trainee Nick Name."
       }
     },
-    "SubID": {
-      "type": "string",
-      "minLength": 32,
-      "maxLength": 36,
-      "metadata": {
-        "description": "SubsciptionID (for Let's Encrypt)"
-      }
-    },
-    "TenantID": {
-      "type": "string",
-      "minLength": 32,
-      "maxLength": 36,
-      "metadata": {
-        "description": "TenantID (for Let's Encrypt)"
-      }
-    },
-    "AppID": {
-      "type": "string",
-      "minLength": 32,
-      "maxLength": 36,
-      "metadata": {
-        "description": "AppID (for Let's Encrypt)"
-      }
-    },
-    "Password": {
-      "type": "string",
-      "minLength": 24,
-      "metadata": {
-        "description": "Password (for Let's Encrypt)"
-      }
-    },
     "Domain": {
       "type": "Object",
       "allowedValues": [
@@ -131,15 +100,12 @@
     "virtualNetworkName": "[tolower(concat(variables('Company'),'-',parameters('trainee'),'-vn-infrastructure'))]",
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
-    "modulesACMEVars": "[concat(' -Domain ', variables('fqdn'),' -SubscriptionID ',parameters('SubID'),' -TenantID ',parameters('TenantID'),' -AppID ',parameters('AppID'),' -AZAppPass ',parameters('Password'))]",
-    "modulesRunUnrestricted": "powershell -ExecutionPolicy Unrestricted -file ",
     "modulesPath": "https://raw.githubusercontent.com/modzilla99/Exchange2016Azure/master/",
-    "modulesWorkload": "https://github.com/modzilla99/ExchangeWorkload/releases/download/0.1/",
+    "modulesWorkload": "https://github.com/modzilla99/ExchangeWorkload/releases/download/0.5/",
     "modulesExchange": "ExchangeWorkload.zip",
     "modulesUrlExchange": "[concat(variables('modulesWorkload'),variables('modulesExchange'))]",
     "modulesExchangeData": "ExchangeWorkload.psd1",
     "modulesUrlExchangeData": "[concat(variables('modulesPath'),variables('modulesExchangeData'))]",
-    "modulesExchangeVars": "[concat(' -uri ',variables('exchangeISOUri'),' -destination ',variables('exchangeInstallerPath'))]",
     "modulesACMEVars": "[concat(' -SubscriptionID ',parameters('SubID'),' -TenantID ',parameters('TenantID'),' -AppID ',parameters('AppID'),' -AZAppPass ',parameters('Password'))]",
     "configurationFunctionExchange": "ExchangeWorkload.ps1\\InstallAndConfigureExchange",
     "nsgName": "[tolower(concat(variables('Company'),'-',parameters('trainee'),'-nsg-infrastructure'))]",
@@ -405,6 +371,7 @@
             "type": "CustomScriptExtension",
             "typeHandlerVersion": "1.7",
             "autoUpgradeMinorVersion": true,
+            "protectedSettings": {},
             "settings": {
               "fileUris": [
                 "[variables('modulesUrlExchangeISODownload')]"

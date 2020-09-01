@@ -146,4 +146,3 @@ Set-WinUserLanguageList -LanguageList $LanguageSetting -Force
 Set-Culture -CultureInfo $LanguageSetting
 Set-WinHomeLocation -GeoId $GeoIDSetting
 Set-TimeZone -Name $TimeZoneSetting
- 

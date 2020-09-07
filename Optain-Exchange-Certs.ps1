@@ -147,7 +147,7 @@ function Set-RegionalSettings {
 
 function Get-BasicSoftware {
 
-	choco install "netfx-4.8" vscode microsoft-edge > C:\Temp\software-install.log
+	choco install -y netfx-4.8 vscode microsoft-edge > C:\Temp\software-install.log
 
 }
 

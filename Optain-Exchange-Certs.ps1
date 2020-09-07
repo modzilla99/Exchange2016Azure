@@ -16,12 +16,23 @@ param (
 	[string]$AZAppPass
 )
 
-function Get-LECertificates {
-	
-	[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+function PreFlight {
+
 	New-Item -Path C:\Temp -ItemType Directory -Force
+	New-Item -Path C:\Certificates -ItemType Directory -Force
+
+
+	[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+	Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\.NetFramework\v4.0.30319' -Name 'SchUseStrongCrypto' -Value '1' -Type DWord
+
 	Install-PackageProvider -Name NuGet -Force
 	Install-Module -Name Posh-ACME -Force -Scope AllUsers
+	Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+
+	Start-Sleep 10
+}
+
+function Get-LECertificates {
 
 	$azParams = @{
 		AZSubscriptionId      = $SubscriptionID
@@ -32,11 +43,10 @@ function Get-LECertificates {
 
 	New-PACertificate "*.$Domain","$Domain" -AcceptTOS -DnsPlugin Azure -PluginArgs $azParams -Verbose > C:\Temp\acme.log
 
-	New-Item -Path C:\Certificates -ItemType Directory -Force 
-	$Path = (Get-PACertificate).CertFile  
-	$Path = $Path.Substring(0, $Path.Length - 9) 
-	$Path = "$Path\*.*" 
-	Copy-Item -Path $Path -Destination C:\Certificates -Recurse 
+	$CertPath = (Get-PACertificate).CertFile  
+	$CertPath = $CertPath.Substring(0, $CertPath.Length - 9) 
+	$CertPath = "$CertPath\*.*" 
+	Copy-Item -Path $CertPath -Destination C:\Certificates -Recurse 
 
 	
 }
@@ -113,16 +123,6 @@ function Get-ExchangeISO {
 	}
 }
 
-function Get-BasicSoftware {
-
-	[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
-	Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-	Start-Sleep 10
-	choco install "netfx-4.8" -y
-	choco install vscode -y
-	choco install microsoft-edge -y
-}
-
 function Set-RegionalSettings {
 	$LanguageSetting = "de-DE"
 	$GeoIDSetting = "94"
@@ -145,7 +145,15 @@ function Set-RegionalSettings {
 	Set-TimeZone -Name $TimeZoneSetting
 }
 
+function Get-BasicSoftware {
+
+	choco install "netfx-4.8" vscode microsoft-edge > C:\Temp\software-install.log
+
+}
+
+	PreFlight
+
 	Get-LECertificates
 	Get-ExchangeISO
-	Get-BasicSoftware
 	Set-RegionalSettings
+	Get-BasicSoftware
